@@ -32,7 +32,7 @@ export default class FieldRepeater extends Component {
     super(props);
 
     this.state = {
-      value: props.shape ? [] : '',
+      value: this.initialiseValue(),
     };
   }
 
@@ -41,10 +41,10 @@ export default class FieldRepeater extends Component {
     const { name, value } = e.target;
 
     if (shape) {
-      const shapeIndex = shape.findIndex(element => element.name === name);
+      const currentField = shape.find(element => element.name === name);
       const newValue = this.state.value;
-      newValue[shapeIndex] = value;
-      console.log(shapeIndex);
+      newValue[currentField.name] = value;
+
       this.setState({
         value: newValue,
       });
@@ -53,29 +53,17 @@ export default class FieldRepeater extends Component {
         value,
       });
     }
-    console.log(e.target.name);
   };
 
   handleAddItem = e => {
     e.preventDefault();
     const { onAddItem, shape } = this.props;
     const { value } = this.state;
-    if (typeof onAddItem === 'function') {
-      if (shape) {
-        const newValue = {};
-        shape.forEach((shapeMap, index) => {
-          newValue[shapeMap.name] = value[index];
-        });
-        onAddItem(newValue);
-        this.setState({
-          value: [],
-        });
-      } else {
-        onAddItem(value);
-      }
 
+    if (typeof onAddItem === 'function') {
+      onAddItem(value);
       this.setState({
-        value: '',
+        value: this.initialiseValue(),
       });
     }
   };
@@ -89,6 +77,20 @@ export default class FieldRepeater extends Component {
     }
   };
 
+  initialiseValue = () => {
+    const { shape } = this.props;
+    if (shape) {
+      const initialValue = {};
+      shape.forEach(shapeData => {
+        initialValue[shapeData.name] = '';
+      });
+
+      return initialValue;
+    }
+
+    return '';
+  };
+
   render() {
     const { handleChange } = this;
     const { value } = this.state;
@@ -96,10 +98,12 @@ export default class FieldRepeater extends Component {
 
     const dataRows = data.map(row => {
       if (shape) {
+        const keys = Object.keys(row);
+        const values = Object.values(row);
         return (
-          <tr key={row.join('-')}>
-            {row.map((columnValue, index) => (
-              <td key={`${shape[index].name}-${columnValue}`}>{columnValue}</td>
+          <tr key={values.join('-')}>
+            {values.map((columnValue, index) => (
+              <td key={`${keys[index]}-${columnValue}`}>{columnValue}</td>
             ))}
             <td>
               <button
@@ -136,7 +140,7 @@ export default class FieldRepeater extends Component {
           <td key={input.name}>
             <input
               type={input.type}
-              value={value[index]}
+              value={value[input.name]}
               name={input.name}
               onChange={handleChange}
             />

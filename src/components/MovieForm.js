@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 // import PropTypes from 'prop-types';
 import { Formik, Field, Form, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import _ from 'underscore';
 import FieldRepeater from './FieldRepeater';
 
 export const MoveFormSchema = Yup.object().shape({
@@ -123,18 +124,23 @@ export default class MovieForm extends Component {
                     name: 'Value',
                   },
                 ]}
-                data={[
-                  ['Internet Movie Database', '7.7/10'],
-                  ['Rotten Tomatoes', '83%'],
-                  ['Metacritic', '67/100'],
-                ]}
+                data={values.ratings}
                 pluralTitle="Ratings"
                 singluarTitle="Rating"
                 onAddItem={data => {
-                  console.log(data);
+                  const { ratings } = values;
+                  ratings.push(data);
+                  setFieldValue('ratings', ratings);
                 }}
                 onRemoveItem={value => {
-                  console.log(value);
+                  const { ratings } = values;
+
+                  ratings.splice(
+                    ratings.findIndex(rating => _.isEqual(rating, value)),
+                    1
+                  );
+
+                  setFieldValue('ratings', ratings);
                 }}
               />
               <ErrorMessage name="ratings" />
