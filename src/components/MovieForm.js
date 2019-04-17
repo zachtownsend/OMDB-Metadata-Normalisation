@@ -111,7 +111,32 @@ export default class MovieForm extends Component {
 
             <div className="form-group">
               <label htmlFor="ratings">Ratings</label>
-              <Field className="form-control" type="text" name="ratings" />
+              <FieldRepeater
+                name="ratings"
+                shape={[
+                  {
+                    type: 'text',
+                    name: 'Source',
+                  },
+                  {
+                    type: 'text',
+                    name: 'Value',
+                  },
+                ]}
+                data={[
+                  ['Internet Movie Database', '7.7/10'],
+                  ['Rotten Tomatoes', '83%'],
+                  ['Metacritic', '67/100'],
+                ]}
+                pluralTitle="Ratings"
+                singluarTitle="Rating"
+                onAddItem={data => {
+                  console.log(data);
+                }}
+                onRemoveItem={value => {
+                  console.log(value);
+                }}
+              />
               <ErrorMessage name="ratings" />
             </div>
 
@@ -122,9 +147,14 @@ export default class MovieForm extends Component {
                 data={values.actors}
                 pluralTitle="Actors"
                 singluarTitle="Actor"
-                onAddRow={data => {
+                onAddItem={data => {
                   const { actors } = values;
                   actors.push(data);
+                  setFieldValue('actors', actors);
+                }}
+                onRemoveItem={value => {
+                  const { actors } = values;
+                  actors.splice(actors.indexOf(value), 1);
                   setFieldValue('actors', actors);
                 }}
               />
