@@ -64,7 +64,14 @@ export default class MovieForm extends Component {
           // );
         }}
         validationSchema={MoveFormSchema}
-        render={({ errors, status, touched, isSubmitting }) => (
+        render={({
+          values,
+          errors,
+          status,
+          touched,
+          isSubmitting,
+          setFieldValue,
+        }) => (
           <Form>
             <div className="form-group">
               <label htmlFor="uuid">Nowtilus ID</label>
@@ -112,9 +119,14 @@ export default class MovieForm extends Component {
               <label htmlFor="actors">Actors</label>
               <FieldRepeater
                 name="actors"
-                data={['John Wayne', 'Paul Rudd']}
+                data={values.actors}
                 pluralTitle="Actors"
                 singluarTitle="Actor"
+                onAddRow={data => {
+                  const { actors } = values;
+                  actors.push(data);
+                  setFieldValue('actors', actors);
+                }}
               />
               <ErrorMessage name="actors" />
             </div>
@@ -138,7 +150,11 @@ export default class MovieForm extends Component {
             </div>
 
             {status && status.msg && <div> {status.msg} </div>}
-            <button className="btn" type="submit" disabled={isSubmitting}>
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={isSubmitting}
+            >
               Submit
             </button>
           </Form>

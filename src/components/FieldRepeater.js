@@ -52,26 +52,37 @@ export default class FieldRepeater extends Component {
     const { name, data, singluarTitle, inputType } = this.props;
     const simpleData = arrayOfValues.matches(data);
 
-    const dataValues = data.map((data, index) => {
-      if (simpleData) {
-        return (
-          <tr key={data}>
-            <td>
-              {data}
-              <input type="hidden" name={`${name}[${index}]`} value={data} />
-            </td>
-          </tr>
-        );
-      }
+    const dataValues = Array.isArray(data)
+      ? data.map((value, index) => {
+          if (simpleData) {
+            return (
+              <tr key={value}>
+                <td>
+                  {value}
+                  <input
+                    type="hidden"
+                    name={`${name}[${index}]`}
+                    value={value}
+                  />
+                </td>
+              </tr>
+            );
+          }
 
-      return null;
-    });
+          return null;
+        })
+      : null;
 
     const controls = simpleData ? (
       <tr className="field-controls">
         <td>
           <input type={inputType} value={value} onChange={handleChange} />
-          <button className="add-value" onClick={this.handleAddRow}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={this.handleAddRow}
+            disabled={value.length < 1}
+          >
             Add {singluarTitle}
           </button>
         </td>
@@ -81,11 +92,6 @@ export default class FieldRepeater extends Component {
     return (
       <div className="field-repeater">
         <table className="table field-data">
-          <thead>
-            <tr>
-              <th>Value Name</th>
-            </tr>
-          </thead>
           <tbody data-testid="field-data">{dataValues}</tbody>
           <tfoot data-testid="field-controls">{controls}</tfoot>
         </table>

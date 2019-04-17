@@ -44,7 +44,7 @@ describe('Field Repeater given array of strings', () => {
     );
 
     const fieldControls = getByTestId('field-controls');
-    const button = fieldControls.querySelector('button.add-value');
+    const button = fieldControls.querySelector('button.btn');
     const input = fieldControls.querySelector('input');
 
     expect(input.type).toBe('text');
@@ -70,7 +70,7 @@ describe('Field Repeater given array of strings', () => {
     );
 
     const fieldControls = getByTestId('field-controls');
-    const button = fieldControls.querySelector('button.add-value');
+    const button = fieldControls.querySelector('button.btn');
     const input = fieldControls.querySelector('input');
 
     fireEvent.change(input, {
