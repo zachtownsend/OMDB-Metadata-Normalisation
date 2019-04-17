@@ -12,14 +12,13 @@ export default class FieldRepeater extends Component {
   static propTypes = {
     name: PropTypes.string.isRequired,
     data: PropTypes.array,
-    inputType: PropTypes.oneOf(['text', 'number']).isRequired,
+    inputType: PropTypes.oneOf(['text', 'number']),
     pluralTitle: PropTypes.string,
     singluarTitle: PropTypes.string,
     onAddRow: PropTypes.func,
   };
 
   static defaultProps = {
-    name: 'repeater',
     inputType: 'text',
     data: [],
     pluralTitle: 'Values',
