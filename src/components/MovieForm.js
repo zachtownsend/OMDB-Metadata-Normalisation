@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { Formik, Field, FieldArray, Form, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import _ from 'underscore';
+import axios from 'axios';
 import FieldRepeater from './FieldRepeater';
 import FieldArrayWrapper from './FieldArrayWrapper';
 
@@ -50,20 +51,61 @@ export const MoveFormSchema = Yup.object().shape({
   genre: Yup.array(Yup.string()),
 });
 
-export default class MovieForm extends Component {
-  // static propTypes = {
-  //   prop: PropTypes
-  // }
+export function normaliseData(values, data) {
+  const keys = Object.keys(values);
 
+  keys.forEach(key => {
+    switch (key) {
+      case 'uuid':
+        break;
+      case 'imdbID':
+        values[key] = data.imdbID;
+        break;
+      case 'title':
+        values[key] = data.Title;
+        break;
+      case 'synopsis':
+        values[key] = data.Plot;
+        break;
+      case 'releaseDate':
+        values[key] = data.Year;
+        break;
+      case 'studio':
+        values[key] = data.Production;
+        break;
+      case 'ratings':
+        values[key] = data.Ratings;
+        break;
+      case 'actors':
+        values[key] = data.Actors.split(', ');
+        break;
+      case 'director':
+        values[key] = data.Director.split(', ');
+        break;
+      case 'writer':
+        values[key] = data.Writer.split(', ');
+        break;
+      case 'genre':
+        values[key] = data.Genre.split(', ');
+        break;
+      default:
+        console.log('didnt find');
+    }
+  });
+
+  return values;
+}
+
+export default class MovieForm extends Component {
   render() {
     return (
       <Formik
         initialValues={{
-          uuid: '',
+          uuid: '12345',
           imdbID: '',
-          title: '',
+          title: 'arthur',
           synopsis: '',
-          releaseDate: '',
+          releaseDate: '2011',
           studio: '',
           ratings: [],
           actors: [],
@@ -84,6 +126,33 @@ export default class MovieForm extends Component {
           //     actions.setStatus({ msg: 'Set some arbitrary status or data' });
           //   }
           // );
+          const { title, releaseDate, imdbID } = values;
+          const params = {
+            apikey: '834ba8fa',
+            t: title,
+            y: releaseDate,
+          };
+
+          if (imdbID) {
+            params.i = imdbID;
+          }
+
+          axios
+            .get(`http://www.omdbapi.com/`, {
+              params,
+            })
+            .then(
+              response => {
+                const { data } = response;
+                actions.setSubmitting(false);
+                console.log(values, actions, normaliseData(values, data));
+                actions.setValues(normaliseData(values, data));
+              },
+              error => {
+                console.error(error);
+                actions.setSubmitting(false);
+              }
+            );
         }}
         validationSchema={MoveFormSchema}
         render={({
@@ -117,7 +186,7 @@ export default class MovieForm extends Component {
           };
 
           return (
-            <Form>
+            <Form data-testid="movie-form">
               <div className="form-group">
                 <label htmlFor="uuid">Nowtilus ID</label>
                 <Field className="form-control" type="text" name="uuid" />
@@ -138,7 +207,11 @@ export default class MovieForm extends Component {
 
               <div className="form-group">
                 <label htmlFor="synopsis">Synopsis</label>
-                <Field className="form-control" type="text" name="synopsis" />
+                <Field
+                  className="form-control"
+                  component="textarea"
+                  name="synopsis"
+                />
                 <ErrorMessage name="synopsis" />
               </div>
 
