@@ -12,7 +12,7 @@ const FieldArrayWrapper = ({ name, values, addButtonText }) => (
             {values.map((value, index) => (
               <tr key={index}>
                 <td>
-                  <Field name={`${name}.${index}`} />
+                  <Field className="form-control" name={`${name}.${index}`} />
                 </td>
                 <td>
                   <button

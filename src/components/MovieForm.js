@@ -236,7 +236,7 @@ export default class MovieForm extends Component {
                 <FieldArray
                   name="ratings"
                   render={arrayHelpers => (
-                    <table>
+                    <table className="table">
                       {values.ratings.length > 0 && (
                         <thead>
                           <tr>
@@ -250,10 +250,16 @@ export default class MovieForm extends Component {
                         {values.ratings.map((rating, index) => (
                           <tr key={index}>
                             <td>
-                              <Field name={`ratings[${index}].Source]`} />
+                              <Field
+                                className="form-control"
+                                name={`ratings[${index}].Source]`}
+                              />
                             </td>
                             <td>
-                              <Field name={`ratings[${index}].Value]`} />
+                              <Field
+                                className="form-control"
+                                name={`ratings[${index}].Value]`}
+                              />
                             </td>
                             <td>
                               <button

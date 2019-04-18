@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import MoveForm from './components/MovieForm';
+import MovieForm from './components/MovieForm';
 
 class App extends Component {
   render() {
@@ -7,7 +7,9 @@ class App extends Component {
       <div className="App">
         <div className="container">
           <div className="row">
-            <MoveForm />
+            <div className="col-12">
+              <MovieForm />
+            </div>
           </div>
         </div>
       </div>
