@@ -4,6 +4,27 @@ import { Formik, Field, FieldArray, Form, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import _ from 'underscore';
 import FieldRepeater from './FieldRepeater';
+import FieldArrayWrapper from './FieldArrayWrapper';
+
+Yup.addMethod(Yup.array, 'unique', function(message) {
+  return this.test('unqiue', message, function(value) {
+    if (!value) {
+      return true;
+    }
+
+    const { path } = this;
+    const hasDuplicates = new Set(value).size !== value.length;
+
+    if (hasDuplicates) {
+      throw this.createError({
+        path,
+        message,
+      });
+    }
+
+    return true;
+  });
+});
 
 export const MoveFormSchema = Yup.object().shape({
   uuid: Yup.string()
@@ -23,7 +44,7 @@ export const MoveFormSchema = Yup.object().shape({
       Value: Yup.string(),
     })
   ),
-  actors: Yup.array(Yup.string()),
+  actors: Yup.array(Yup.string()).unique('This should be unique'),
   director: Yup.array(Yup.string()),
   writer: Yup.array(Yup.string()),
   genre: Yup.array(Yup.string()),
@@ -142,69 +163,66 @@ export default class MovieForm extends Component {
                 <FieldArray
                   name="ratings"
                   render={arrayHelpers => (
-                    <div>
-                      {values.ratings.map((rating, index) => (
-                        <div key={index}>
-                          <Field name={`ratings[${index}].source]`} />
-                          <Field name={`ratings[${index}].value]`} />
-                          <button
-                            type="button"
-                            onClick={() => arrayHelpers.remove(index)}
-                          >
-                            -
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          arrayHelpers.push({ source: '', value: '' })
-                        }
-                      >
-                        Add Rating
-                      </button>
-                    </div>
+                    <table>
+                      {values.ratings.length > 0 && (
+                        <thead>
+                          <tr>
+                            <th>Source</th>
+                            <th rowSpan="2">Value</th>
+                          </tr>
+                        </thead>
+                      )}
+
+                      <tbody>
+                        {values.ratings.map((rating, index) => (
+                          <tr key={index}>
+                            <td>
+                              <Field name={`ratings[${index}].Source]`} />
+                            </td>
+                            <td>
+                              <Field name={`ratings[${index}].Value]`} />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm"
+                                onClick={() => arrayHelpers.remove(index)}
+                              >
+                                x
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan="3">
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() =>
+                                arrayHelpers.push({ Source: '', Value: '' })
+                              }
+                            >
+                              Add Rating
+                            </button>
+                            <ErrorMessage name="ratings" />
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   )}
                 />
-                <ErrorMessage name="ratings" />
               </div>
 
               <div className="form-group">
                 <label htmlFor="actors">Actors</label>
-                <FieldArray
+                <FieldArrayWrapper
                   name="actors"
-                  render={arrayHelpers => (
-                    <div>
-                      {values.actors && values.actors.length > 0 ? (
-                        values.actors.map((actor, index) => (
-                          <div key={index}>
-                            <Field name={`actors.${index}`} />
-                            <button
-                              type="button"
-                              onClick={() => arrayHelpers.remove(actor)} // remove a friend from the list
-                            >
-                              -
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => arrayHelpers.insert(actor, '')} // insert an empty string at a position
-                            >
-                              +
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => arrayHelpers.push('')}
-                        >
-                          {/* show this when user has removed all friends from the list */}
-                          Add an actor
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  values={values.actors}
+                  addButtonText="Add an actor"
                 />
+
                 <ErrorMessage name="actors" />
               </div>
 
