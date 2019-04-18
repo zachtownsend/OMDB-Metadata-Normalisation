@@ -80,25 +80,29 @@ describe('Field Repeater given array of strings', () => {
 });
 
 describe('Field repeater receives multidimensional data', () => {
-  it('displays the table header if a shape is defined', () => {
+  it('displays the table header if a schema is defined', () => {
+    const schema = [
+      {
+        type: 'text',
+        name: 'Source',
+      },
+      {
+        type: 'text',
+        name: 'Value',
+      },
+    ];
+
+    const dummyData = [
+      { Source: 'Internet Movie Database', Value: '7.7/10' },
+      { Source: 'Rotten Tomatoes', Value: '83%' },
+      { Source: 'Metacritic', Value: '67/100' },
+    ];
+
     const { getByTestId } = render(
       <FieldRepeater
         name="ratings"
-        data={[
-          ['Internet Movie Database', '7.7/10'],
-          ['Rotten Tomatoes', '83%'],
-          ['Metacritic', '67/100'],
-        ]}
-        shape={[
-          {
-            type: 'text',
-            name: 'Source',
-          },
-          {
-            type: 'text',
-            name: 'Value',
-          },
-        ]}
+        data={dummyData}
+        schema={schema}
         pluralTitle="Actors"
         singularTitle="Actor"
       />
@@ -113,8 +117,8 @@ describe('Field repeater receives multidimensional data', () => {
     expect(ths[1].textContent).toMatch('Value');
   });
 
-  it('displays the currently added multidimensional data', () => {
-    const shape = [
+  it('displays added values in correct order if given array of arrays', () => {
+    const schema = [
       {
         type: 'text',
         name: 'Source',
@@ -135,7 +139,7 @@ describe('Field repeater receives multidimensional data', () => {
       <FieldRepeater
         name="ratings"
         data={dummyData}
-        shape={shape}
+        schema={schema}
         pluralTitle="Actors"
         singularTitle="Actor"
       />
@@ -152,4 +156,189 @@ describe('Field repeater receives multidimensional data', () => {
       );
     });
   });
+
+  it('displays the currently added multidimensional data if added as multidimensional array', () => {
+    const schema = [
+      {
+        type: 'text',
+        name: 'Source',
+      },
+      {
+        type: 'text',
+        name: 'Value',
+      },
+    ];
+
+    const dummyData = [
+      { Source: 'Internet Movie Database', Value: '7.7/10' },
+      { Source: 'Rotten Tomatoes', Value: '83%' },
+      { Source: 'Metacritic', Value: '67/100' },
+    ];
+
+    const { getByTestId } = render(
+      <FieldRepeater
+        name="ratings"
+        data={dummyData}
+        schema={schema}
+        pluralTitle="Actors"
+        singularTitle="Actor"
+      />
+    );
+
+    const body = getByTestId('field-data');
+    const trs = body.querySelectorAll('tr');
+
+    expect(trs.length).toBe(3);
+    trs.forEach((tr, index) => {
+      const tds = tr.children;
+
+      expect(tds[0].textContent).toMatch(dummyData[index].Source);
+      expect(tds[1].textContent).toMatch(dummyData[index].Value);
+    });
+  });
+
+  it('displays error if user attempts to add duplicate data', () => {
+    const schema = [
+      {
+        type: 'text',
+        name: 'Source',
+      },
+      {
+        type: 'text',
+        name: 'Value',
+      },
+    ];
+
+    const dummyData = [
+      { Source: 'Internet Movie Database', Value: '7.7/10' },
+      { Source: 'Rotten Tomatoes', Value: '83%' },
+      { Source: 'Metacritic', Value: '67/100' },
+    ];
+
+    const { getByTestId } = render(
+      <FieldRepeater
+        name="ratings"
+        data={dummyData}
+        schema={schema}
+        pluralTitle="Actors"
+        singularTitle="Actor"
+      />
+    );
+
+    const controls = getByTestId('field-controls');
+    const inputs = controls.querySelectorAll('input');
+    const button = controls.querySelector('button');
+
+    fireEvent.change(inputs[0], {
+      target: {
+        value: dummyData[0].Source,
+      },
+    });
+
+    fireEvent.change(inputs[1], {
+      target: {
+        value: dummyData[0].Value,
+      },
+    });
+
+    fireEvent.click(button);
+
+    const errorMessage = getByTestId('error-message');
+
+    expect(errorMessage).toBeDefined();
+  });
+
+  it('removes error after next input change if data is not duplicate', () => {
+    const schema = [
+      {
+        type: 'text',
+        name: 'Source',
+      },
+      {
+        type: 'text',
+        name: 'Value',
+      },
+    ];
+
+    const dummyData = [
+      { Source: 'Internet Movie Database', Value: '7.7/10' },
+      { Source: 'Rotten Tomatoes', Value: '83%' },
+      { Source: 'Metacritic', Value: '67/100' },
+    ];
+
+    const { getByTestId, queryByTestId } = render(
+      <FieldRepeater
+        name="ratings"
+        data={dummyData}
+        schema={schema}
+        pluralTitle="Actors"
+        singularTitle="Actor"
+      />
+    );
+
+    const controls = getByTestId('field-controls');
+    const inputs = controls.querySelectorAll('input');
+    const button = controls.querySelector('button');
+
+    fireEvent.change(inputs[0], {
+      target: {
+        value: dummyData[0].Source,
+      },
+    });
+
+    fireEvent.change(inputs[1], {
+      target: {
+        value: dummyData[0].Value,
+      },
+    });
+
+    fireEvent.click(button);
+
+    fireEvent.change(inputs[0], {
+      target: {
+        value: `${dummyData[0].Source}p`,
+      },
+    });
+
+    expect(queryByTestId('error-message')).toBeNull();
+  });
+
+  // it('prevents adding if any data is empty', () => {
+  //   const schema = [
+  //     {
+  //       type: 'text',
+  //       name: 'Source',
+  //     },
+  //     {
+  //       type: 'text',
+  //       name: 'Value',
+  //     },
+  //   ];
+
+  //   const { getByTestId, queryByTestId } = render(
+  //     <FieldRepeater
+  //       name="ratings"
+  //       data={[]}
+  //       schema={schema}
+  //       pluralTitle="Ratings"
+  //       singularTitle="Rating"
+  //     />
+  //   );
+
+  //   const controls = getByTestId('field-controls');
+  //   const inputs = controls.querySelectorAll('input');
+  //   const button = controls.querySelector('button');
+
+  //   fireEvent.change(inputs[0], {
+  //     target: {
+  //       value: 'Test input',
+  //     },
+  //   });
+
+  //   fireEvent.click(button);
+
+  //   const error = queryByTestId('error-message');
+  //   expect(error).not.toBeNull();
+  //   expect(error.firstChild.textContent).toBe('Data incomplete');
+  // });
 });

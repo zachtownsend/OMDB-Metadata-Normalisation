@@ -114,7 +114,7 @@ export default class MovieForm extends Component {
               <label htmlFor="ratings">Ratings</label>
               <FieldRepeater
                 name="ratings"
-                shape={[
+                schema={[
                   {
                     type: 'text',
                     name: 'Source',
