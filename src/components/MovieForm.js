@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 // import PropTypes from 'prop-types';
-import { Formik, Field, Form, ErrorMessage } from 'formik';
+import { Formik, Field, FieldArray, Form, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import _ from 'underscore';
 import FieldRepeater from './FieldRepeater';
@@ -72,129 +72,204 @@ export default class MovieForm extends Component {
           touched,
           isSubmitting,
           setFieldValue,
-        }) => (
-          <Form>
-            <div className="form-group">
-              <label htmlFor="uuid">Nowtilus ID</label>
-              <Field className="form-control" type="text" name="uuid" />
-              <ErrorMessage name="uuid" component="div" />
-            </div>
+        }) => {
+          const addItem = (name, data) => {
+            try {
+              const value = values[name];
+              value.push(data);
+              setFieldValue(name, value);
+            } catch (e) {
+              console.error(e);
+            }
+          };
 
-            <div className="form-group">
-              <label htmlFor="imdbID">IMDB ID</label>
-              <Field className="form-control" type="text" name="imdbID" />
-              <ErrorMessage name="imdbID" />
-            </div>
+          const removeItem = (name, value, schema = false) => {
+            const entry = values[name];
 
-            <div className="form-group">
-              <label htmlFor="title">Title</label>
-              <Field className="form-control" type="text" name="title" />
-              <ErrorMessage name="title" />
-            </div>
+            if (schema) {
+              entry.splice(entry.findIndex(item => _.isEqual(item, value)), 1);
+            } else {
+              entry.splice(entry.indexOf(value), 1);
+            }
 
-            <div className="form-group">
-              <label htmlFor="synopsis">Synopsis</label>
-              <Field className="form-control" type="text" name="synopsis" />
-              <ErrorMessage name="synopsis" />
-            </div>
+            setFieldValue(name, entry);
+          };
 
-            <div className="form-group">
-              <label htmlFor="releaseDate">Release Date</label>
-              <Field className="form-control" type="text" name="releaseDate" />
-              <ErrorMessage name="releaseDate" />
-            </div>
+          return (
+            <Form>
+              <div className="form-group">
+                <label htmlFor="uuid">Nowtilus ID</label>
+                <Field className="form-control" type="text" name="uuid" />
+                <ErrorMessage name="uuid" component="div" />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="studio">Studio</label>
-              <Field className="form-control" type="text" name="studio" />
-              <ErrorMessage name="studio" />
-            </div>
+              <div className="form-group">
+                <label htmlFor="imdbID">IMDB ID</label>
+                <Field className="form-control" type="text" name="imdbID" />
+                <ErrorMessage name="imdbID" />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="ratings">Ratings</label>
-              <FieldRepeater
-                name="ratings"
-                schema={[
-                  {
-                    type: 'text',
-                    name: 'Source',
-                  },
-                  {
-                    type: 'text',
-                    name: 'Value',
-                  },
-                ]}
-                data={values.ratings}
-                pluralTitle="Ratings"
-                singluarTitle="Rating"
-                onAddItem={data => {
-                  const { ratings } = values;
-                  ratings.push(data);
-                  setFieldValue('ratings', ratings);
-                }}
-                onRemoveItem={value => {
-                  const { ratings } = values;
+              <div className="form-group">
+                <label htmlFor="title">Title</label>
+                <Field className="form-control" type="text" name="title" />
+                <ErrorMessage name="title" />
+              </div>
 
-                  ratings.splice(
-                    ratings.findIndex(rating => _.isEqual(rating, value)),
-                    1
-                  );
+              <div className="form-group">
+                <label htmlFor="synopsis">Synopsis</label>
+                <Field className="form-control" type="text" name="synopsis" />
+                <ErrorMessage name="synopsis" />
+              </div>
 
-                  setFieldValue('ratings', ratings);
-                }}
-              />
-              <ErrorMessage name="ratings" />
-            </div>
+              <div className="form-group">
+                <label htmlFor="releaseDate">Release Date</label>
+                <Field
+                  className="form-control"
+                  type="text"
+                  name="releaseDate"
+                />
+                <ErrorMessage name="releaseDate" />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="actors">Actors</label>
-              <FieldRepeater
-                name="actors"
-                data={values.actors}
-                pluralTitle="Actors"
-                singluarTitle="Actor"
-                onAddItem={data => {
-                  const { actors } = values;
-                  actors.push(data);
-                  setFieldValue('actors', actors);
-                }}
-                onRemoveItem={value => {
-                  const { actors } = values;
-                  actors.splice(actors.indexOf(value), 1);
-                  setFieldValue('actors', actors);
-                }}
-              />
-              <ErrorMessage name="actors" />
-            </div>
+              <div className="form-group">
+                <label htmlFor="studio">Studio</label>
+                <Field className="form-control" type="text" name="studio" />
+                <ErrorMessage name="studio" />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="director">Director</label>
-              <Field className="form-control" type="text" name="director" />
-              <ErrorMessage name="director" />
-            </div>
+              <div className="form-group">
+                <label htmlFor="ratings">Ratings</label>
+                <FieldArray
+                  name="ratings"
+                  render={arrayHelpers => (
+                    <div>
+                      {values.ratings.map((rating, index) => (
+                        <div key={index}>
+                          <Field name={`ratings[${index}].source]`} />
+                          <Field name={`ratings[${index}].value]`} />
+                          <button
+                            type="button"
+                            onClick={() => arrayHelpers.remove(index)}
+                          >
+                            -
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          arrayHelpers.push({ source: '', value: '' })
+                        }
+                      >
+                        Add Rating
+                      </button>
+                    </div>
+                  )}
+                />
+                <ErrorMessage name="ratings" />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="writer">Writer</label>
-              <Field className="form-control" type="text" name="writer" />
-              <ErrorMessage name="writer" />
-            </div>
+              <div className="form-group">
+                <label htmlFor="actors">Actors</label>
+                <FieldArray
+                  name="actors"
+                  render={arrayHelpers => (
+                    <div>
+                      {values.actors && values.actors.length > 0 ? (
+                        values.actors.map((actor, index) => (
+                          <div key={index}>
+                            <Field name={`actors.${index}`} />
+                            <button
+                              type="button"
+                              onClick={() => arrayHelpers.remove(actor)} // remove a friend from the list
+                            >
+                              -
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => arrayHelpers.insert(actor, '')} // insert an empty string at a position
+                            >
+                              +
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => arrayHelpers.push('')}
+                        >
+                          {/* show this when user has removed all friends from the list */}
+                          Add an actor
+                        </button>
+                      )}
+                    </div>
+                  )}
+                />
+                <ErrorMessage name="actors" />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="genre">Genre</label>
-              <Field className="form-control" type="text" name="genre" />
-              <ErrorMessage name="genre" />
-            </div>
+              <div className="form-group">
+                <label htmlFor="director">Director</label>
+                <FieldRepeater
+                  name="director"
+                  data={values.director}
+                  pluralTitle="Directors"
+                  singluarTitle="Director"
+                  onAddItem={data => {
+                    addItem('director', data);
+                  }}
+                  onRemoveItem={value => {
+                    removeItem('director', value);
+                  }}
+                />
+                <ErrorMessage name="director" />
+              </div>
 
-            {status && status.msg && <div> {status.msg} </div>}
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={isSubmitting}
-            >
-              Submit
-            </button>
-          </Form>
-        )}
+              <div className="form-group">
+                <label htmlFor="writer">Writer</label>
+                <FieldRepeater
+                  name="writer"
+                  data={values.writer}
+                  pluralTitle="Writers"
+                  singluarTitle="Writer"
+                  onAddItem={data => {
+                    addItem('writer', data);
+                  }}
+                  onRemoveItem={value => {
+                    removeItem('writer', value);
+                  }}
+                />
+                <ErrorMessage name="writer" />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="genre">Genre</label>
+                <FieldRepeater
+                  name="genre"
+                  data={values.genre}
+                  pluralTitle="Genres"
+                  singluarTitle="Genre"
+                  onAddItem={data => {
+                    addItem('genre', data);
+                  }}
+                  onRemoveItem={value => {
+                    removeItem('genre', value);
+                  }}
+                />
+                <ErrorMessage name="genre" />
+              </div>
+
+              {status && status.msg && <div> {status.msg} </div>}
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={isSubmitting}
+              >
+                Submit
+              </button>
+            </Form>
+          );
+        }}
       />
     );
   }
