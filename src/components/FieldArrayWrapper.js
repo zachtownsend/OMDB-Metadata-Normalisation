@@ -12,26 +12,26 @@ const FieldArrayWrapper = ({ name, values, addButtonText }) => (
             {values.map((value, index) => (
               <tr key={index}>
                 <td>
-                  <Field className="form-control" name={`${name}.${index}`} />
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-danger"
-                    onClick={() => arrayHelpers.remove(value)} // remove a friend from the list
-                  >
-                    -
-                  </button>
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-success"
-                    disabled={value === ''}
-                    onClick={() => arrayHelpers.insert(value, '')} // insert an empty string at a position
-                  >
-                    +
-                  </button>
+                  <div className="input-group">
+                    <Field className="form-control" name={`${name}.${index}`} />
+                    <div className="input-group-append">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger"
+                        onClick={() => arrayHelpers.remove(value)} // remove a friend from the list
+                      >
+                        -
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-success"
+                        disabled={value === ''}
+                        onClick={() => arrayHelpers.insert(value, '')} // insert an empty string at a position
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ))}

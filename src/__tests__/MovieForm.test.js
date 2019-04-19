@@ -140,4 +140,107 @@ describe('Normalise Data', () => {
       genre: ['Comedy', 'Romance'],
     });
   });
+
+  it('populates the missing fields, and properly formats fields added by the user', () => {
+    const dummydata = {
+      uuid: '12345',
+      imdbID: '',
+      title: 'arthur',
+      synopsis: '',
+      releaseDate: '2011',
+      studio: '',
+      ratings: [
+        {
+          Source: 'great Movie webSite',
+          Value: '11/10',
+        },
+      ],
+      actors: ['joe bloggs'],
+      director: [],
+      writer: [],
+      genre: [],
+    };
+
+    const dummyResponse = {
+      Title: 'Arthur',
+      Year: '2011',
+      Rated: 'PG-13',
+      Released: '08 Apr 2011',
+      Runtime: '110 min',
+      Genre: 'Comedy, Romance',
+      Director: 'Jason Winer',
+      Writer: 'Peter Baynham (screenplay), Steve Gordon (story)',
+      Actors: 'Russell Brand, Helen Mirren, Greta Gerwig, Jennifer Garner',
+      Plot:
+        "A drunken playboy stands to lose a wealthy inheritance when he falls for a woman his family doesn't like.",
+      Language: 'English',
+      Country: 'USA',
+      Awards: '3 wins & 6 nominations.',
+      Poster:
+        'https://m.media-amazon.com/images/M/MV5BMzMwMTUwMDkwOV5BMl5BanBnXkFtZTcwMjg1MDg0NA@@._V1_SX300.jpg',
+      Ratings: [
+        {
+          Source: 'Internet Movie Database',
+          Value: '5.7/10',
+        },
+        {
+          Source: 'Rotten Tomatoes',
+          Value: '26%',
+        },
+        {
+          Source: 'Metacritic',
+          Value: '36/100',
+        },
+      ],
+      Metascore: '36',
+      imdbRating: '5.7',
+      imdbVotes: '48,655',
+      imdbID: 'tt1334512',
+      Type: 'movie',
+      DVD: '15 Jul 2011',
+      BoxOffice: '$29,200,000',
+      Production: 'Warner Bros.',
+      Website: 'http://www.arthurthemovie.com/',
+      Response: 'True',
+    };
+
+    const values = normaliseData(dummydata, dummyResponse);
+    expect(values).toEqual({
+      uuid: '12345',
+      imdbID: 'tt1334512',
+      title: 'Arthur',
+      synopsis:
+        "A drunken playboy stands to lose a wealthy inheritance when he falls for a woman his family doesn't like.",
+      releaseDate: '2011',
+      studio: 'Warner Bros.',
+      ratings: [
+        {
+          Source: 'Internet Movie Database',
+          Value: '5.7/10',
+        },
+        {
+          Source: 'Rotten Tomatoes',
+          Value: '26%',
+        },
+        {
+          Source: 'Metacritic',
+          Value: '36/100',
+        },
+        {
+          Source: 'Great Movie Website',
+          Value: '11/10',
+        },
+      ],
+      actors: [
+        'Russell Brand',
+        'Helen Mirren',
+        'Greta Gerwig',
+        'Jennifer Garner',
+        'Joe Bloggs',
+      ],
+      director: ['Jason Winer'],
+      writer: ['Peter Baynham (screenplay)', 'Steve Gordon (story)'],
+      genre: ['Comedy', 'Romance'],
+    });
+  });
 });
