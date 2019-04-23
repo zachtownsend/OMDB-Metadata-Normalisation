@@ -9,6 +9,7 @@ import Button from 'react-bootstrap/Button';
 import '@gouch/to-title-case';
 import FieldRepeater from './FieldRepeater';
 import FieldArrayWrapper from './FieldArrayWrapper';
+import TitleSearch from './TitleSearch';
 
 Yup.addMethod(Yup.array, 'unique', function(message) {
   return this.test('unqiue', message, function(value) {
@@ -61,25 +62,34 @@ export const MoveFormSchema = Yup.object().shape({
 
 /**
  *
+ * @param {array} array Array whose contents you wish to format
+ */
+function formatArray(array) {
+  return array.map(data => {
+    if (typeof data === 'object') {
+      Object.keys(data).forEach(key => {
+        data[key] = data[key].toLowerCase().toTitleCase();
+      });
+
+      return data;
+    }
+
+    return data.toLowerCase().toTitleCase();
+  });
+}
+/**
+ *
  * @param {array} userData Array of user data to be processed
  * @param {string|array} apiData String or array of data from the api to merge
  */
 function mergeAndFormatArray(userData, apiData) {
-  const apiDataArray = Array.isArray(apiData) ? apiData : apiData.split(', ');
-
-  return apiDataArray.concat(
-    userData.map(data => {
-      if (typeof data === 'object') {
-        Object.keys(data).forEach(key => {
-          data[key] = data[key].toLowerCase().toTitleCase();
-        });
-
-        return data;
-      }
-
-      return data.toTitleCase();
-    })
+  const apiDataArray = formatArray(
+    Array.isArray(apiData) ? apiData : apiData.split(', ')
   );
+
+  const mergedArray = apiDataArray.concat(formatArray(userData));
+
+  return [...new Set(mergedArray)];
 }
 
 export function normaliseData(values, data) {
@@ -114,6 +124,7 @@ export function normaliseData(values, data) {
 
 export default class MovieForm extends Component {
   state = {
+    submittedData: {},
     movieData: {},
     modal: {
       open: false,
@@ -132,6 +143,7 @@ export default class MovieForm extends Component {
   render() {
     return (
       <div>
+        <TitleSearch />
         <Formik
           initialValues={{
             uuid: '12345',
@@ -147,6 +159,10 @@ export default class MovieForm extends Component {
             genre: [],
           }}
           onSubmit={(values, actions) => {
+            this.setState({
+              submittedValues: values,
+            });
+
             const { title, releaseDate, imdbID } = values;
             const params = {
               apikey: '834ba8fa',
@@ -178,7 +194,12 @@ export default class MovieForm extends Component {
                             </Modal.Header>
                             <Modal.Body>{data.Error}</Modal.Body>
                             <Modal.Footer>
-                              <Button variant="secondary">Close</Button>
+                              <Button
+                                variant="secondary"
+                                onClick={this.handleCloseModal}
+                              >
+                                Close
+                              </Button>
                             </Modal.Footer>
                           </div>
                         ),
@@ -233,6 +254,9 @@ export default class MovieForm extends Component {
 
             return (
               <Form data-testid="movie-form">
+                <div className="form-group">
+                  <label htmlFor="title-search" />
+                </div>
                 <div className="form-group">
                   <label htmlFor="uuid">Nowtilus ID</label>
                   <Field className="form-control" type="text" name="uuid" />
