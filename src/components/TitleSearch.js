@@ -4,6 +4,7 @@ import _ from 'underscore';
 import { Formik, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import Autosuggest from 'react-autosuggest';
+import Autocomplete from 'react-autocomplete';
 import { defaultTheme } from 'react-autosuggest/dist/theme';
 import axios from 'axios';
 
@@ -16,35 +17,33 @@ const SearchFormSchema = Yup.object().shape({
     .required('Please enter movie release year'),
 });
 
-// When suggestion is clicked, Autosuggest needs to populate the input
-// based on the clicked suggestion. Teach Autosuggest how to calculate the
-// input value for every given suggestion.
-const getSuggestionValue = suggestion => suggestion.Title;
+function getUnique(array, key) {
+  const usedKeys = [];
 
-// Use your imagination to render suggestions.
-const renderSuggestion = ({ Title, Year }) => (
-  <div>
-    <h4>
-      {Title} ({Year})
-    </h4>
-  </div>
-);
+  return array.filter(item => {
+    if (usedKeys.includes(item[key])) {
+      return false;
+    }
+
+    usedKeys.push(item[key]);
+    return true;
+  });
+}
 
 export default class TitleSearch extends Component {
-  constructor() {
-    super();
+  static propTypes = {
+    onSubmit: PropTypes.func,
+  };
 
-    this.state = {
-      suggestions: [],
-      selected: {},
-      loading: false,
-    };
-  }
+  static defaultProps = {
+    onSubmit: null,
+  };
 
-  shouldComponentUpdate(nextProps, nextState) {
-    const { suggestions } = this.state;
-    return !_.isEqual(suggestions, nextState.suggestions);
-  }
+  state = {
+    suggestions: [],
+    selected: {},
+    loading: false,
+  };
 
   onSuggestionsFetchRequested = (title, year) => {
     if (this.lastRequestId !== null) {
@@ -73,38 +72,59 @@ export default class TitleSearch extends Component {
         })
         .then(res => res.data.Search)
         .then(results => {
-          console.log(results);
           this.setState({
             loading: false,
             suggestions:
-              results !== undefined && Array.isArray(results) ? results : [],
+              results !== undefined && Array.isArray(results)
+                ? getUnique(results, 'imdbID')
+                : [],
           });
         });
     }, 500);
   };
 
-  onSuggestionsClearRequested = () => {
-    this.setState({
-      suggestions: [],
-    });
-  };
-
-  shouldRenderSuggestions = value => {
-    const { selected } = this.state;
-    return selected.Title === undefined || value !== selected.Title;
+  onChange = (e, values, handleChange) => {
+    const { value } = e.target;
+    this.onSuggestionsFetchRequested(value, values.releaseYear);
+    handleChange(e);
   };
 
   render() {
-    const { suggestions } = this.state;
-
+    const { suggestions, selected } = this.state;
+    const { onSubmit } = this.props;
     return (
-      <div className="movie-search">
+      <div className="movie-search mb-5">
         <Formik
-          initalValues={{ title: '', releaseYear: '' }}
+          initalValues={{
+            title: '',
+            releaseYear: '',
+          }}
           validationSchema={SearchFormSchema}
-          render={({ values, errors, handleChange, handleSubmit }) => (
+          onSubmit={(values, actions) => {
+            onSubmit(selected);
+
+            actions.resetForm({
+              title: '',
+              releaseYear: '',
+            });
+
+            this.setState({
+              selected: {},
+            });
+          }}
+          render={({
+            values,
+            touched,
+            errors,
+            setFieldValue,
+            handleChange,
+            handleSubmit,
+          }) => (
             <form className="form" onSubmit={handleSubmit}>
               <fieldset>
+                <header>
+                  <h2>Find Movie</h2>
+                </header>
                 <div className="form-row">
                   <div className="col-3 form-group">
                     <label htmlFor="releaseYear">Release Year</label>
@@ -112,46 +132,61 @@ export default class TitleSearch extends Component {
                       className="form-control"
                       type="number"
                       name="releaseYear"
+                      onChange={e => {
+                        this.onChange(e, values, handleChange);
+                      }}
                     />
                     <ErrorMessage name="releaseYear" />
                   </div>
                   <div className="col form-group">
                     <label htmlFor="title">Movie Title Search</label>
-                    <Autosuggest
-                      theme={defaultTheme}
-                      suggestions={suggestions}
-                      onSuggestionsFetchRequested={this.onSuggestionsFetchRequested(
-                        values.title || '',
-                        values.releaseYear || ''
-                      )}
-                      onSuggestionsClearRequested={
-                        this.onSuggestionsClearRequested
-                      }
-                      onSuggestionSelected={(e, { suggestion }) => {
-                        this.setState({
-                          selected: suggestion,
-                        });
-
-                        values.title = suggestion.Title;
-                      }}
-                      getSuggestionValue={getSuggestionValue}
-                      shouldRenderSuggestions={this.shouldRenderSuggestions}
-                      renderSuggestion={renderSuggestion}
+                    <Autocomplete
                       inputProps={{
                         id: 'title',
                         name: 'title',
-                        onChange: handleChange,
-                        value: values.title || '',
                         className: 'form-control',
                         disabled:
-                          errors.releaseYear !== undefined ||
-                          !values.releaseYear,
+                          values.releaseYear === undefined ||
+                          errors.releaseYear !== undefined,
                       }}
+                      wrapperStyle={{
+                        display: 'block',
+                        position: 'relative',
+                      }}
+                      value={values.title}
+                      items={suggestions}
+                      getItemValue={movie => movie.Title}
+                      onSelect={(e, movie) => {
+                        setFieldValue('title', movie.Title);
+                        this.setState({
+                          selected: movie,
+                        });
+                      }}
+                      onChange={e => {
+                        this.onChange(e, values, handleChange);
+                      }}
+                      renderMenu={children => (
+                        <div className="menu">{children}</div>
+                      )}
+                      renderItem={(item, isHighlighted) => (
+                        <div
+                          className={`item ${
+                            isHighlighted ? 'item-highlighted' : ''
+                          }`}
+                          key={item.imdbID}
+                        >
+                          {item.Title} ({item.Year})
+                        </div>
+                      )}
                     />
                   </div>
                 </div>
                 <div className="form-group">
-                  <button className="btn btn-primary" type="submit">
+                  <button
+                    disabled={_.isEmpty(selected)}
+                    className="btn btn-primary"
+                    type="submit"
+                  >
                     Get Movie Data
                   </button>
                 </div>

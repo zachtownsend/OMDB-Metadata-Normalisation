@@ -1,8 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Field, FieldArray } from 'formik';
+import FormattingField from './FormattingField';
 
-const FieldArrayWrapper = ({ name, values, addButtonText }) => (
+const FieldArrayWrapper = ({ name, values, addButtonText, setFieldValue }) => (
   <FieldArray
     name={name}
     render={arrayHelpers =>
@@ -13,14 +14,25 @@ const FieldArrayWrapper = ({ name, values, addButtonText }) => (
               <tr key={index}>
                 <td>
                   <div className="input-group">
-                    <Field className="form-control" name={`${name}.${index}`} />
+                    {setFieldValue ? (
+                      <FormattingField
+                        setFieldValue={setFieldValue}
+                        className="form-control"
+                        name={`${name}.${index}`}
+                      />
+                    ) : (
+                      <Field
+                        className="form-control"
+                        name={`${name}.${index}`}
+                      />
+                    )}
                     <div className="input-group-append">
                       <button
                         type="button"
                         className="btn btn-sm btn-danger"
                         onClick={() => arrayHelpers.remove(value)} // remove a friend from the list
                       >
-                        -
+                        +
                       </button>
                       <button
                         type="button"

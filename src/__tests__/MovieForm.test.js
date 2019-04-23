@@ -243,4 +243,6 @@ describe('Normalise Data', () => {
       genre: ['Comedy', 'Romance'],
     });
   });
+
+  it('reverts to the data the user has entered when form resubmitted and no movie is found', () => {});
 });

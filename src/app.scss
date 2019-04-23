@@ -1,1 +1,50 @@
+$primary: #54678C;
+$secondary: #8C897B;
 @import "~bootstrap/scss/bootstrap.scss";
+
+// $primary-color: #54678C;
+// $secondary-color: #26261F;
+// $tertiary-color: #8C897B;
+// $brown: #403E34;
+// $off-white: #BFB7AE;
+
+header {
+  &.page-header {
+    background: $primary;
+    padding: 48px 0;
+    color: $white;
+  }
+}
+
+.instructions {
+  padding: 48px 0;
+}
+
+form {
+  &.disabled {
+    opacity: 0.5;
+  }
+
+  input[role="combobox"] + .menu {
+    position: absolute;
+    background: $white;
+    z-index: 1;
+    width: 100%;
+
+    .item {
+      display: block;
+      padding: 8px;
+      border: 1px solid $gray-500;
+      cursor: pointer;
+
+      &-highlighted {
+        background-color: $primary;
+        color: $white;
+      }
+
+      + .item {
+        border-top: 0;
+      }
+    }
+  }
+}

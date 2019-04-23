@@ -10,6 +10,7 @@ import '@gouch/to-title-case';
 import FieldRepeater from './FieldRepeater';
 import FieldArrayWrapper from './FieldArrayWrapper';
 import TitleSearch from './TitleSearch';
+import FormattingField from './FormattingField';
 
 Yup.addMethod(Yup.array, 'unique', function(message) {
   return this.test('unqiue', message, function(value) {
@@ -44,9 +45,7 @@ export const MoveFormSchema = Yup.object().shape({
   }),
   title: Yup.string().required('Title is required'),
   synopsis: Yup.string(),
-  releaseDate: Yup.number()
-    .min(1850, 'The release year must be 1850 or later')
-    .required('Release date is required'),
+  releaseDate: Yup.string().required('Release date is required'),
   studio: Yup.string(),
   ratings: Yup.array().of(
     Yup.object().shape({
@@ -82,14 +81,10 @@ function formatArray(array) {
  * @param {array} userData Array of user data to be processed
  * @param {string|array} apiData String or array of data from the api to merge
  */
-function mergeAndFormatArray(userData, apiData) {
-  const apiDataArray = formatArray(
-    Array.isArray(apiData) ? apiData : apiData.split(', ')
-  );
+function mergeAndFormatArray(data) {
+  const dataArray = formatArray(Array.isArray(data) ? data : data.split(', '));
 
-  const mergedArray = apiDataArray.concat(formatArray(userData));
-
-  return [...new Set(mergedArray)];
+  return formatArray(dataArray);
 }
 
 export function normaliseData(values, data) {
@@ -112,7 +107,7 @@ export function normaliseData(values, data) {
     const fieldKey = dataMap[key];
     if (fieldKey) {
       if (Array.isArray(values[key])) {
-        values[key] = mergeAndFormatArray(values[key], data[fieldKey]);
+        values[key] = mergeAndFormatArray(data[fieldKey]);
       } else {
         values[key] = data[fieldKey];
       }
@@ -124,12 +119,49 @@ export function normaliseData(values, data) {
 
 export default class MovieForm extends Component {
   state = {
-    submittedData: {},
-    movieData: {},
+    initialValues: {
+      uuid: '',
+      imdbID: '',
+      title: '',
+      synopsis: '',
+      releaseDate: '',
+      studio: '',
+      ratings: [],
+      actors: [],
+      director: [],
+      writer: [],
+      genre: [],
+    },
+    initialSearchValues: {
+      title: '',
+      releaseYear: '',
+    },
     modal: {
       open: false,
       content: null,
     },
+  };
+
+  resetForm = () => {
+    this.setState({
+      initialValues: {
+        uuid: '',
+        imdbID: '',
+        title: '',
+        synopsis: '',
+        releaseDate: '',
+        studio: '',
+        ratings: [],
+        actors: [],
+        director: [],
+        writer: [],
+        genre: [],
+      },
+      initialSearchValues: {
+        title: '',
+        releaseYear: '',
+      },
+    });
   };
 
   handleCloseModal = () => {
@@ -140,93 +172,98 @@ export default class MovieForm extends Component {
     });
   };
 
+  handleClosedModal = () => {
+    this.setState({
+      modal: {
+        content: null,
+      },
+    });
+  };
+
+  fetchData = ({ title, year, imdbID }, onSuccess, onError) => {
+    const params = {
+      apikey: '834ba8fa',
+      t: title,
+      y: year,
+    };
+
+    if (imdbID) {
+      params.i = imdbID;
+    }
+
+    axios
+      .get(`http://www.omdbapi.com/`, {
+        params,
+      })
+      .then(
+        response => {
+          if (typeof onSuccess === 'function') {
+            const { data } = response;
+            onSuccess(data);
+          }
+        },
+        error => {
+          console.error(error);
+          if (typeof onError === 'function') {
+            onError(error);
+          }
+        }
+      );
+  };
+
+  submitSearch = ({ title, year, imdbID }) => {
+    this.fetchData({ title, year, imdbID }, data => {
+      this.setState(prevState => ({
+        selected: true,
+        initialValues: normaliseData(prevState.initialValues, data),
+      }));
+    });
+  };
+
   render() {
+    const { initialSearchValues, initialValues, modal, selected } = this.state;
+
     return (
       <div>
-        <TitleSearch />
+        <TitleSearch
+          initialValues={initialSearchValues}
+          onSubmit={this.submitSearch}
+        />
         <Formik
-          initialValues={{
-            uuid: '12345',
-            imdbID: '',
-            title: 'arthur',
-            synopsis: '',
-            releaseDate: '2011',
-            studio: '',
-            ratings: [],
-            actors: [],
-            director: [],
-            writer: [],
-            genre: [],
-          }}
+          enableReinitialize
+          initialValues={initialValues}
           onSubmit={(values, actions) => {
-            this.setState({
-              submittedValues: values,
-            });
-
-            const { title, releaseDate, imdbID } = values;
-            const params = {
-              apikey: '834ba8fa',
-              t: title,
-              y: releaseDate,
-            };
-
-            if (imdbID) {
-              params.i = imdbID;
-            }
-
-            axios
-              .get(`http://www.omdbapi.com/`, {
-                params,
-              })
-              .then(
-                response => {
-                  const { data } = response;
-                  console.log(response);
-                  if (data.Response === 'False') {
-                    actions.setError(data.Error);
-                    this.setState({
-                      modal: {
-                        open: true,
-                        content: (
-                          <div>
-                            <Modal.Header closeButton>
-                              <Modal.Title>Error</Modal.Title>
-                            </Modal.Header>
-                            <Modal.Body>{data.Error}</Modal.Body>
-                            <Modal.Footer>
-                              <Button
-                                variant="secondary"
-                                onClick={this.handleCloseModal}
-                              >
-                                Close
-                              </Button>
-                            </Modal.Footer>
-                          </div>
-                        ),
-                      },
-                    });
-                    actions.setSubmitting(false);
-                  } else {
-                    actions.setSubmitting(false);
-                    actions.setValues(normaliseData(values, data));
-                  }
+            this.setState(
+              {
+                modal: {
+                  open: true,
+                  content: (
+                    <div>
+                      <Modal.Header closeButton>
+                        <Modal.Title>Success!</Modal.Title>
+                      </Modal.Header>
+                      <Modal.Body>
+                        <p>The movie data has been added</p>
+                      </Modal.Body>
+                      <Modal.Footer>
+                        <Button
+                          variant="secondary"
+                          onClick={this.handleCloseModal}
+                        >
+                          Close
+                        </Button>
+                      </Modal.Footer>
+                    </div>
+                  ),
                 },
-                error => {
-                  console.error(error);
-                  actions.setSubmitting(false);
-                  actions.setErrors(error);
-                }
-              );
+              },
+              () => {
+                this.resetForm();
+              }
+            );
           }}
           validationSchema={MoveFormSchema}
-          render={({
-            values,
-            errors,
-            status,
-            touched,
-            isSubmitting,
-            setFieldValue,
-          }) => {
+          render={({ values, errors, status, isSubmitting, setFieldValue }) => {
             const addItem = (name, data) => {
               try {
                 const value = values[name];
@@ -252,194 +289,257 @@ export default class MovieForm extends Component {
               setFieldValue(name, entry);
             };
 
+            const className = key => {
+              let className = 'form-control';
+
+              if (errors[key]) {
+                className += ' is-invalid';
+              }
+
+              return className;
+            };
+
             return (
-              <Form data-testid="movie-form">
-                <div className="form-group">
-                  <label htmlFor="title-search" />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="uuid">Nowtilus ID</label>
-                  <Field className="form-control" type="text" name="uuid" />
-                  <ErrorMessage name="uuid" component="div" />
-                </div>
+              <Form
+                className={!selected ? 'disabled' : ''}
+                data-testid="movie-form"
+              >
+                <fieldset disabled={!selected}>
+                  <header>
+                    <h2>Movie Data Form</h2>
+                  </header>
+                  <div className="form-group">
+                    <label htmlFor="uuid">Nowtilus ID</label>
+                    <Field
+                      className={className('uuid')}
+                      type="text"
+                      name="uuid"
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="uuid"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="imdbID">IMDB ID</label>
-                  <Field className="form-control" type="text" name="imdbID" />
-                  <ErrorMessage name="imdbID" />
-                </div>
+                  <div className="form-group">
+                    <label htmlFor="imdbID">IMDB ID</label>
+                    <Field
+                      className={className('imdbID')}
+                      type="text"
+                      name="imdbID"
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="imdbID"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="title">Title</label>
-                  <Field className="form-control" type="text" name="title" />
-                  <ErrorMessage name="title" />
-                </div>
+                  <div className="form-group">
+                    <label htmlFor="title">Title</label>
+                    <FormattingField
+                      className={className('title')}
+                      type="text"
+                      name="title"
+                      setFieldValue={setFieldValue}
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="title"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="synopsis">Synopsis</label>
-                  <Field
-                    className="form-control"
-                    component="textarea"
-                    name="synopsis"
-                  />
-                  <ErrorMessage name="synopsis" />
-                </div>
+                  <div className="form-group">
+                    <label htmlFor="synopsis">Synopsis</label>
+                    <Field
+                      className={className('synopsis')}
+                      component="textarea"
+                      name="synopsis"
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="synopsis"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="releaseDate">Release Date</label>
-                  <Field
-                    className="form-control"
-                    type="number"
-                    name="releaseDate"
-                  />
-                  <ErrorMessage name="releaseDate" />
-                </div>
+                  <div className="form-group">
+                    <label htmlFor="releaseDate">Release Date</label>
+                    <Field
+                      className={className('releaseDate')}
+                      type="text"
+                      name="releaseDate"
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="releaseDate"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="studio">Studio</label>
-                  <Field className="form-control" type="text" name="studio" />
-                  <ErrorMessage name="studio" />
-                </div>
+                  <div className="form-group">
+                    <label htmlFor="studio">Studio</label>
+                    <Field
+                      className={className('studio')}
+                      type="text"
+                      name="studio"
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="studio"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="ratings">Ratings</label>
-                  <FieldArray
-                    name="ratings"
-                    render={arrayHelpers => (
-                      <table className="table">
-                        {values.ratings.length > 0 && (
-                          <thead>
+                  <div className="form-group">
+                    <label htmlFor="ratings">Ratings</label>
+                    <FieldArray
+                      name="ratings"
+                      render={arrayHelpers => (
+                        <table className="table">
+                          {values.ratings.length > 0 && (
+                            <thead>
+                              <tr>
+                                <th>Source</th>
+                                <th rowSpan="2">Value</th>
+                              </tr>
+                            </thead>
+                          )}
+
+                          <tbody>
+                            {values.ratings.map((rating, index) => (
+                              <tr key={index}>
+                                <td>
+                                  <Field
+                                    className="form-control"
+                                    name={`ratings[${index}].Source]`}
+                                  />
+                                </td>
+                                <td>
+                                  <Field
+                                    className="form-control"
+                                    name={`ratings[${index}].Value]`}
+                                  />
+                                </td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    className="btn btn-danger btn-sm"
+                                    onClick={() => arrayHelpers.remove(index)}
+                                  >
+                                    x
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
                             <tr>
-                              <th>Source</th>
-                              <th rowSpan="2">Value</th>
-                            </tr>
-                          </thead>
-                        )}
-
-                        <tbody>
-                          {values.ratings.map((rating, index) => (
-                            <tr key={index}>
-                              <td>
-                                <Field
-                                  className="form-control"
-                                  name={`ratings[${index}].Source]`}
-                                />
-                              </td>
-                              <td>
-                                <Field
-                                  className="form-control"
-                                  name={`ratings[${index}].Value]`}
-                                />
-                              </td>
-                              <td>
+                              <td colSpan="3">
                                 <button
                                   type="button"
-                                  className="btn btn-danger btn-sm"
-                                  onClick={() => arrayHelpers.remove(index)}
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() =>
+                                    arrayHelpers.push({ Source: '', Value: '' })
+                                  }
                                 >
-                                  x
+                                  Add Rating
                                 </button>
+                                <ErrorMessage
+                                  component="p"
+                                  className="invalid-feedback"
+                                  name="ratings"
+                                />
                               </td>
                             </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr>
-                            <td colSpan="3">
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                onClick={() =>
-                                  arrayHelpers.push({ Source: '', Value: '' })
-                                }
-                              >
-                                Add Rating
-                              </button>
-                              <ErrorMessage name="ratings" />
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    )}
-                  />
-                </div>
+                          </tfoot>
+                        </table>
+                      )}
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="actors">Actors</label>
-                  <FieldArrayWrapper
-                    name="actors"
-                    values={values.actors}
-                    addButtonText="Add an actor"
-                  />
+                  <div className="form-group">
+                    <label htmlFor="actors">Actors</label>
+                    <FieldArrayWrapper
+                      name="actors"
+                      values={values.actors}
+                      addButtonText="Add an actor"
+                      setFieldValue={setFieldValue}
+                    />
 
-                  <ErrorMessage name="actors" />
-                </div>
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="actors"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="director">Director</label>
-                  <FieldRepeater
-                    name="director"
-                    data={values.director}
-                    pluralTitle="Directors"
-                    singluarTitle="Director"
-                    onAddItem={data => {
-                      addItem('director', data);
-                    }}
-                    onRemoveItem={value => {
-                      removeItem('director', value);
-                    }}
-                  />
-                  <ErrorMessage name="director" />
-                </div>
+                  <div className="form-group">
+                    <label htmlFor="director">Director</label>
+                    <FieldArrayWrapper
+                      name="director"
+                      values={values.director}
+                      addButtonText="Add a Director"
+                      setFieldValue={setFieldValue}
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="director"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="writer">Writer</label>
-                  <FieldRepeater
-                    name="writer"
-                    data={values.writer}
-                    pluralTitle="Writers"
-                    singluarTitle="Writer"
-                    onAddItem={data => {
-                      addItem('writer', data);
-                    }}
-                    onRemoveItem={value => {
-                      removeItem('writer', value);
-                    }}
-                  />
-                  <ErrorMessage name="writer" />
-                </div>
+                  <div className="form-group">
+                    <label htmlFor="writer">Writer</label>
+                    <FieldArrayWrapper
+                      name="writer"
+                      values={values.writer}
+                      addButtonText="Add a Writer"
+                      setFieldValue={setFieldValue}
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="writer"
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="genre">Genre</label>
-                  <FieldRepeater
-                    name="genre"
-                    data={values.genre}
-                    pluralTitle="Genres"
-                    singluarTitle="Genre"
-                    onAddItem={data => {
-                      addItem('genre', data);
-                    }}
-                    onRemoveItem={value => {
-                      removeItem('genre', value);
-                    }}
-                  />
-                  <ErrorMessage name="genre" />
-                </div>
+                  <div className="form-group">
+                    <label htmlFor="genre">Genre</label>
+                    <FieldArrayWrapper
+                      name="genre"
+                      values={values.genre}
+                      addButtonText="Add a Genre"
+                      setFieldValue={setFieldValue}
+                    />
+                    <ErrorMessage
+                      component="p"
+                      className="invalid-feedback"
+                      name="genre"
+                    />
+                  </div>
 
-                {status && status.msg && <div> {status.msg} </div>}
-                <button
-                  className="btn btn-primary"
-                  type="submit"
-                  disabled={isSubmitting}
-                >
-                  Submit
-                </button>
+                  {status && status.msg && <div> {status.msg} </div>}
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    Submit
+                  </button>
+                </fieldset>
               </Form>
             );
           }}
         />
-        <Modal show={this.state.modal.open} onHide={this.handleCloseModal}>
-          {this.state.modal.content}
+        <Modal
+          show={modal.open}
+          onHide={this.handleCloseModal}
+          onExited={this.handleClosedModal}
+        >
+          {modal.content}
         </Modal>
       </div>
     );
