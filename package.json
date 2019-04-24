@@ -1,6 +1,6 @@
 {
   "name": "nowtilus-code-challenge",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "@gouch/to-title-case": "^2.2.1",
